@@ -30,7 +30,8 @@ def parse(file_name):
     with open(file_name) as data:
         data = data.read()
         data = data.split("\n")
-        del data[-1]
+        if data[-1] == "":
+            del data[-1]
         for i in range(0, len(data)):
             data[i] = data[i].split(" ")
             for j in range(0, len(data[i])):
@@ -87,7 +88,6 @@ def main():
     """
     file_name = sys.argv[1]
     number = int(sys.argv[2])
-    print(number)
     data = parse(file_name)
     values = bfs(data, number)
     neat_values =" ".join(str(x) for x in values)
