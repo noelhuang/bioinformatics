@@ -21,7 +21,7 @@ def parse(file_name):
     :return: data: list of list of edges
 
     Input example:
-    2 3         # (vertices, edges)
+    2 3         # (edges, vertices)
     1 2         # (an edge)
     2 3         # (an edge)
 
