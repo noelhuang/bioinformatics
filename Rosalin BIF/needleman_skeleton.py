@@ -82,6 +82,7 @@ def score(res1, res2):
 
 # write your own functions below here
 
+
 def elongate_sequences(sequence):
     sequence = " " + sequence
     print(sequence)
@@ -90,28 +91,53 @@ def elongate_sequences(sequence):
 
 def create_matrix(seq1, seq2):
     matrix = np.array([[None for j in range(len(seq2))] for i in range(len(seq1))])
-    print(matrix)
+    print(f"This is an empty matrix: \n {matrix}")
     return matrix
 
 
-def fill_matrix(seq1, seq2, matrix, gap_penalty):
-    for i in range(len(matrix)):
-        for j in range(len(matrix[i])):
-            print(f"{i} {j}")
-            if i == 0 and j == 0:
-                matrix[i][j] = 0
-                continue
+def fill_matrix(seq1, seq2, matrix, end_gap_penalty, gap_penalty):
+    traceback_matrix = np.array([[0 for j in range(len(seq2))] for i in range(len(seq1))])
+    print(f"This is a traceback matrix: \n {traceback_matrix}")
 
-            if i == 0 or j == 0:
-                eq1 = matrix[i-1][j-1] + matrix[i][j]
+    matrix[0][0] = 0
+    for j in range(len(matrix[0])):
+        matrix[0][j] = 0
+    for i in range(1, len(matrix)):
+        matrix[i][0] = 0
+
+    for j in range(1, len(matrix[0])):
+        matrix[0][j] = matrix[0][j-1] + end_gap_penalty
+
+    for i in range(1, len(matrix)):
+        matrix[i][0] = matrix[i-1][0] + end_gap_penalty
+
+    for i in range(1, len(matrix)):
+        for j in range(1, len(matrix[i])):
+            print(f"{i} {j}")
+
+            eq1 = matrix[i - 1][j - 1] + score(seq1[i], seq2[j])
+
+            if j == len(matrix[i]): # TODO: check if this is correct (also block underneath)
+                eq2 = matrix[i-1][j] + end_gap_penalty
             else:
-                eq1 = None
-            eq2 = matrix[i-1][j] + gap_penalty
-            eq3 = matrix[i][j-1] + gap_penalty
+                eq2 = matrix[i-1][j] + gap_penalty
+
+            if i == len(matrix):
+                eq3 = matrix[i][j - 1] + end_gap_penalty
+            else:
+                eq3 = matrix[i][j-1] + gap_penalty
+
             possible_scores = [eq1, eq2, eq3]
             matrix[i][j] = max(possible_scores)
-    print(matrix)
-    return matrix
+    filled_matrix = matrix
+    print(filled_matrix)
+    return filled_matrix
+
+
+#def traceback(filled_matrix):
+
+
+
 
 def main():
     seq1 = "THISLINE"
@@ -134,7 +160,9 @@ def main():
     "TTALDQKLVKKTFKLVDETLRRRNLLEAGLL")
 
     matrix = create_matrix(elongate_sequences(seq1), elongate_sequences(seq2))
-    fill_matrix(elongate_sequences(seq1), elongate_sequences(seq2), matrix, 4)
+
+    fill_matrix(elongate_sequences(seq1), elongate_sequences(seq2), matrix, 0, -8)
+
 
 if __name__ == "__main__":
     main()
