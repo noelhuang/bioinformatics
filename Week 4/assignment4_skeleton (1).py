@@ -13,10 +13,10 @@ import numpy as np
 # Function definitions
 
 # Background amino acid probabilities
-pa = { 'A':0.074, 'C':0.025, 'D':0.054, 'E':0.054, 'F':0.047, 'G':0.074,\
-    'H':0.026, 'I':0.068, 'L':0.099, 'K':0.058, 'M':0.025, 'N':0.045,\
-    'P':0.039, 'Q':0.034, 'R':0.052, 'S':0.057, 'T':0.051, 'V':0.073,\
-    'W':0.013, 'Y':0.034 }
+pa = {'A': 0.074, 'C': 0.025, 'D': 0.054, 'E': 0.054, 'F': 0.047, 'G': 0.074, \
+      'H': 0.026, 'I': 0.068, 'L': 0.099, 'K': 0.058, 'M': 0.025, 'N': 0.045, \
+      'P': 0.039, 'Q': 0.034, 'R': 0.052, 'S': 0.057, 'T': 0.051, 'V': 0.073, \
+      'W': 0.013, 'Y': 0.034}
 
 
 class HMM():
@@ -27,14 +27,21 @@ class HMM():
     ignored, and replaced by a data structure of choice
     """
     # Emission probabilities for the match and insert states
-    e_m   = []; e_i   = pa;
+    e_m = [];
+    e_i = pa;
 
     # Transition probabilities from/to matches, inserts and deletions
-    t_mm = []; t_mi = []; t_md = [];
-    t_im = []; t_ii = []; t_id = [];
-    t_dm = []; t_di = []; t_dd = [];
+    t_mm = [];
+    t_mi = [];
+    t_md = [];
+    t_im = [];
+    t_ii = [];
+    t_id = [];
+    t_dm = [];
+    t_di = [];
+    t_dd = [];
 
-    def __init__(self,nmatches):
+    def __init__(self, nmatches):
         """Initialize HMM object with number of match states
 
         nmatches: int, number of match states
@@ -42,21 +49,21 @@ class HMM():
 
         self.nmatches = nmatches
 
-        self.e_m   = [dict(pa) for i in range(0,nmatches)]
-        for i in range(0,nmatches):
+        self.e_m = [dict(pa) for i in range(0, nmatches)]
+        for i in range(0, nmatches):
             for j in pa.keys():
                 self.e_m[i][j] = 0.0
-        self.e_i   = pa;
+        self.e_i = pa;
 
-        self.t_mm  = [0.0 for i in range(0,nmatches+1)]
-        self.t_mi  = [0.0 for i in range(0,nmatches+1)]
-        self.t_md  = [0.0 for i in range(0,nmatches+1)]
-        self.t_im  = [0.0 for i in range(0,nmatches+1)]
-        self.t_ii  = [0.0 for i in range(0,nmatches+1)]
-        self.t_id  = [0.0 for i in range(0,nmatches+1)]
-        self.t_dm  = [0.0 for i in range(0,nmatches+1)]
-        self.t_di  = [0.0 for i in range(0,nmatches+1)]
-        self.t_dd  = [0.0 for i in range(0,nmatches+1)]
+        self.t_mm = [0.0 for i in range(0, nmatches + 1)]
+        self.t_mi = [0.0 for i in range(0, nmatches + 1)]
+        self.t_md = [0.0 for i in range(0, nmatches + 1)]
+        self.t_im = [0.0 for i in range(0, nmatches + 1)]
+        self.t_ii = [0.0 for i in range(0, nmatches + 1)]
+        self.t_id = [0.0 for i in range(0, nmatches + 1)]
+        self.t_dm = [0.0 for i in range(0, nmatches + 1)]
+        self.t_di = [0.0 for i in range(0, nmatches + 1)]
+        self.t_dd = [0.0 for i in range(0, nmatches + 1)]
 
 
 # class HMM_pos:
@@ -79,8 +86,8 @@ def sample(events):
 
     events: dict of {key: probability}, probabilities can also be weights.
     """
-    
-    pick = random.choices(list(events.keys()),list(events.values()))[0]
+
+    pick = random.choices(list(events.keys()), list(events.values()))[0]
     return pick
 
 
@@ -186,25 +193,62 @@ def reduce_alignment(match_states, seq_dict):
 def count_transitions_emissions(reduced_alignments, match_states, seq_dict):
     nmatches = len(list(reduced_alignments.values())[0])
     model = HMM(nmatches)
+    # TODO: Add functionality so last step to end is recognized as going towards match state.
 
     sequences = list(seq_dict.values())
     for sequence in sequences:
         pos_tracker = 0
-        state_tracker = match_states[0]
-        for pos in range(0, len(sequence)):
-            if state_tracker is None: # If last state was insertion
-                if sequence[pos] != '-': # And if an amino acid is found at pos
-                    state_tracker = match_states[pos] # Update state tracker to insert
-                    model.t_
-
-
-
-            if current_state == 'I':
+        state_tracker = 'M'
+        for i in range(0, len(sequence)):
+            if state_tracker == 'M':  # Start from match col
+                if match_states[i] == 'M':  # If going into a match col
+                    if sequence[i] == '-':  # If match col contains gap
+                        model.t_md[pos_tracker] += 1
+                        pos_tracker += 1
+                        state_tracker = 'D'
+                    elif sequence[i] != '-':  # If match col contains aa
+                        model.t_mm[pos_tracker] += 1 # TODO: Something is added one time too many here! Fix this
+                        pos_tracker += 1
+                        state_tracker = 'M'
+                elif match_states[i] is None:  # If going into insert col
+                    if sequence[i] == '-':
+                        print("Nothing happens")
+                    elif sequence[i] != '-':
+                        model.t_mi[pos_tracker] += 1
+                        state_tracker = None
+            elif state_tracker is None:  # Start from insertion column
+                if match_states[i] == 'M':  # If going into match col
+                    if sequence[i] == '-':  # If deletion found
+                        model.t_id[pos_tracker] += 1
+                        pos_tracker += 1
+                        state_tracker = 'M'
+                    elif sequence[i] != '-':  # If aa found
+                        model.t_im[pos_tracker] += 1
+                        pos_tracker += 1
+                        state_tracker = 'M'
+                elif match_states[i] is None:  # If going into insertion col
+                    if sequence[i] == '-':
+                        print("Nothing happens")
+                    elif sequence[i] != '-':
+                        model.t_ii[pos_tracker] += 1
+            elif state_tracker == 'D':  # If starting from deletion state
+                if match_states[i] == 'M':  # And if going into match column
+                    if sequence[i] == '-':  # If gap is found (aka deletion)
+                        model.t_dd[pos_tracker] += 1
+                        pos_tracker += 1
+                    elif sequence[i] != '-':  # If amino acid is found
+                        model.t_dm[pos_tracker] += 1
+                        pos_tracker += 1
+                        state_tracker = 'M'
+                elif match_states[i] is None:  # And if going into insertion col
+                    if sequence[i] == '-':
+                        print("Nothing happens")
+                    elif sequence[i] != '-':
+                        model.t_di[pos_tracker] += 1
+                        state_tracker = None
 
     print(sequences)
     print(model.t_mm)
-
-
 
 
 def main():
@@ -219,7 +263,6 @@ def main():
 
 
 if __name__ == "__main__":
-
     # implement main code here
     infile = 'develop.fasta'
 
