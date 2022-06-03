@@ -8,6 +8,7 @@ Description: this is a script to ...
 # Import statements
 import sys
 import random
+import numpy as np
 
 # Function definitions
 
@@ -58,20 +59,20 @@ class HMM():
         self.t_dd  = [0.0 for i in range(0,nmatches+1)]
 
 
-class HMM_pos:
-
-    def __init__(self, sequences):
-        for i in range(0, len(sequences[0])):
-            if i == 0:
-                self.t_mm =
-                self.t_mi =
-                self.t_md =
-                self.t_im =
-                self.t_ii =
-                self.t_id =
-                self.t_dm =
-                self.t_di =
-                self.t_dd =
+# class HMM_pos:
+#
+#     def __init__(self, sequences):
+#         for i in range(0, len(sequences[0])):
+#             if i == 0:
+#                 self.t_mm =
+#                 self.t_mi =
+#                 self.t_md =
+#                 self.t_im =
+#                 self.t_ii =
+#                 self.t_id =
+#                 self.t_dm =
+#                 self.t_di =
+#                 self.t_dd =
 
 def sample(events):
     """Return a key from dict based on the probabilities
@@ -166,18 +167,45 @@ def reduce_alignment(match_states, seq_dict):
     return reduced_alignments
 
 
+# def make_match_dict(match_states):
+#     match_dict = {}
+#     match_indices = []
+#     for index, state in enumerate(match_states):
+#         if state == 'M':
+#             match_indices.append(index)
+#     print("match indices", match_indices)
+#     for i in range(0, len(match_indices)):
+#         if i < len(match_indices)-1:
+#             match_dict[match_indices[i]] = match_indices[i+1]
+#         if i == len(match_indices)-1:
+#             match_dict[match_indices[i]] = None
+#
+#     return
+
+
 def count_transitions_emissions(reduced_alignments, match_states, seq_dict):
+    nmatches = len(list(reduced_alignments.values())[0])
+    model = HMM(nmatches)
+
     sequences = list(seq_dict.values())
-    match_states[0] = "B"
-    for i, pos in enumerate(match_states):
-        if i > 0:
-            if pos is None:
-                match_states[i] = "I"
+    for sequence in sequences:
+        pos_tracker = 0
+        state_tracker = match_states[0]
+        for pos in range(0, len(sequence)):
+            if state_tracker is None: # If last state was insertion
+                if sequence[pos] != '-': # And if an amino acid is found at pos
+                    state_tracker = match_states[pos] # Update state tracker to insert
+                    model.t_
 
-    for i, pos in enumerate(match_states):
-        if i == 0:
 
-    print(match_states)
+
+            if current_state == 'I':
+
+    print(sequences)
+    print(model.t_mm)
+
+
+
 
 def main():
     seq_dict = parse("develop.fasta")
