@@ -57,6 +57,22 @@ class HMM():
         self.t_di  = [0.0 for i in range(0,nmatches+1)]
         self.t_dd  = [0.0 for i in range(0,nmatches+1)]
 
+
+class HMM_pos:
+
+    def __init__(self, sequences):
+        for i in range(0, len(sequences[0])):
+            if i == 0:
+                self.t_mm =
+                self.t_mi =
+                self.t_md =
+                self.t_im =
+                self.t_ii =
+                self.t_id =
+                self.t_dm =
+                self.t_di =
+                self.t_dd =
+
 def sample(events):
     """Return a key from dict based on the probabilities
 
@@ -69,10 +85,10 @@ def sample(events):
 
 def parse(file_name):
     """
-    Parses a FASTA file containing queries.
+    Parses a FASTA file containing DNA/amino acid sequences.
 
-    :param file_name: Name of the query FASTA file.
-    :return: (list of strings) List of queries
+    :param file_name: Name of the FASTA file to be parsed.
+    :return: (dict), with key = str = sequence name, value = str = DNA/amino acid sequence.
     """
     seq_dict = {}
     with open(file_name) as file:
@@ -88,17 +104,96 @@ def parse(file_name):
     return seq_dict
 
 
+def calc_match_states(seq_dict):
+    """
+    Determines which positions in a multiple sequence alignment are match states
+
+    :param seq_dict: (dict), with key = str = sequence name,
+                            value = str = DNA/amino acid sequence.
+    :return: list whose length is equal to sequence length. At each position
+    in the list, presence of a match is indicated by an 'M',
+    absence of match is indicated by None.
+
+    A position is set to match, if at this position at least half of the
+    sequences have an amino acid.
+    """
+    amino_counter = 0
+    amino_count_list = []
+    sequences = list(seq_dict.values())
+
+    sequence_len = len(sequences[0])
+
+    number_of_sequences = len(sequences)
+    for i in range(0, sequence_len):
+        for sequence in sequences:
+            if sequence[i] != "-":
+                amino_counter = amino_counter + 1
+        amino_count_list.append(amino_counter)
+        amino_counter = 0
+
+    match_states = [None for i in range(0, sequence_len)]
+
+    for i, count in enumerate(amino_count_list):
+        if count >= 0.5 * number_of_sequences:
+            match_states[i] = "M"
+
+    print(match_states)
+    print(amino_count_list)
+    return match_states
+
+
+def reduce_alignment(match_states, seq_dict):
+    """
+    Using the positions at which a Match is known, produces a reduced alignment
+
+    :param match_states: (list) list whose length is equal to sequence length.
+    At each position in the list, presence of a match is indicated by an 'M',
+    absence of match is indicated by None.
+    :param seq_dict: (dict), with key = str = sequence name,
+                            value = str = DNA/amino acid sequence.
+    :return: dictionary with sequence name (str) as keys, and reduced alignment
+    sequences as values (str).
+    """
+    reduced_alignments = {}
+    for seq_name, sequence in seq_dict.items():
+        for j, char in enumerate(sequence):
+            if match_states[j] == 'M':
+                if seq_name in reduced_alignments:
+                    reduced_alignments[seq_name] += char
+                else:
+                    reduced_alignments[seq_name] = char
+    print(reduced_alignments)
+    return reduced_alignments
+
+
+def count_transitions_emissions(reduced_alignments, match_states, seq_dict):
+    sequences = list(seq_dict.values())
+    match_states[0] = "B"
+    for i, pos in enumerate(match_states):
+        if i > 0:
+            if pos is None:
+                match_states[i] = "I"
+
+    for i, pos in enumerate(match_states):
+        if i == 0:
+
+    print(match_states)
+
 def main():
-    seq_dict = parse("test_large.fasta")
+    seq_dict = parse("develop.fasta")
     for key, value in seq_dict.items():
         print(f"{key}\n{value}")
 
+    match_states = calc_match_states(seq_dict)
+    reduced_alignments = reduce_alignment(match_states, seq_dict)
+
+    count_transitions_emissions(reduced_alignments, match_states, seq_dict)
 
 
 if __name__ == "__main__":
 
     # implement main code here
-    infile = 'test.fasta'
+    infile = 'develop.fasta'
 
     main()
 
