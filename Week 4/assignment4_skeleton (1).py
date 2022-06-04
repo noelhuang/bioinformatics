@@ -114,7 +114,7 @@ def parse(file_name):
 
 def calc_match_states(seq_dict):
     """
-    Determines which positions in a multiple sequence alignment are match states
+    Determines which indices in a multiple sequence alignment are match state
 
     :param seq_dict: (dict), with key = str = sequence name,
                             value = str = DNA/amino acid sequence.
@@ -193,10 +193,16 @@ def reduce_alignment(match_states, seq_dict):
 def count_transitions_emissions(reduced_alignments, match_states, seq_dict):
     nmatches = len(list(reduced_alignments.values())[0])
     model = HMM(nmatches)
-    # TODO: Add functionality so last step to end is recognized as going towards match state.
+
+    transition_matrix = [model.t_mm, model.t_mi, model.t_md,
+                         model.t_im, model.t_ii, model.t_id,
+                         model.t_dm, model.t_di, model.t_dd]
+
+    match_states.append('M')
 
     sequences = list(seq_dict.values())
     for sequence in sequences:
+        sequence = sequence + 'E'  # Add an E at the end to signify end column
         pos_tracker = 0
         state_tracker = 'M'
         for i in range(0, len(sequence)):
@@ -207,7 +213,7 @@ def count_transitions_emissions(reduced_alignments, match_states, seq_dict):
                         pos_tracker += 1
                         state_tracker = 'D'
                     elif sequence[i] != '-':  # If match col contains aa
-                        model.t_mm[pos_tracker] += 1 # TODO: Something is added one time too many here! Fix this
+                        model.t_mm[pos_tracker] += 1
                         pos_tracker += 1
                         state_tracker = 'M'
                 elif match_states[i] is None:  # If going into insert col
@@ -221,7 +227,7 @@ def count_transitions_emissions(reduced_alignments, match_states, seq_dict):
                     if sequence[i] == '-':  # If deletion found
                         model.t_id[pos_tracker] += 1
                         pos_tracker += 1
-                        state_tracker = 'M'
+                        state_tracker = 'D'
                     elif sequence[i] != '-':  # If aa found
                         model.t_im[pos_tracker] += 1
                         pos_tracker += 1
@@ -248,7 +254,49 @@ def count_transitions_emissions(reduced_alignments, match_states, seq_dict):
                         state_tracker = None
 
     print(sequences)
-    print(model.t_mm)
+    for transition in transition_matrix:
+        print(transition)
+    print(model.e_m)
+    return transition_matrix, model
+
+
+def calculate_probabilities(transition_matrix):
+    print(transition_matrix)
+    probability_matrix = [x[:] for x in transition_matrix]
+    out_degree_matrix = [[], [], []]
+    for j in range(0, len(transition_matrix[0])):
+        out_degree_m = 0
+        out_degree_i = 0
+        out_degree_d = 0
+        for i in range(0, 3):
+            out_degree_m += transition_matrix[i][j]
+        out_degree_matrix[0].append(out_degree_m)
+
+        for i in range(3, 6):
+            out_degree_i += transition_matrix[i][j]
+        out_degree_matrix[1].append(out_degree_i)
+
+        for i in range(6, 9):
+            out_degree_d += transition_matrix[i][j]
+        out_degree_matrix[2].append(out_degree_d)
+    print(transition_matrix)
+    for j in range(0, len(probability_matrix[0])):
+        for i in range(0, 3):
+            if out_degree_matrix[0][j] != 0:
+                probability_matrix[i][j] = probability_matrix[i][j] \
+                                          / out_degree_matrix[0][j]
+        for i in range(3, 6):
+            if out_degree_matrix[1][j] != 0:
+                probability_matrix[i][j] = probability_matrix[i][j] \
+                                          / out_degree_matrix[1][j]
+        for i in range(6, 9):
+            if out_degree_matrix[2][j] != 0:
+                probability_matrix[i][j] = probability_matrix[i][j] \
+                                          / out_degree_matrix[2][j]
+
+    print("transitions", transition_matrix)
+    print("probaility", probability_matrix)
+    return probability_matrix
 
 
 def main():
@@ -259,7 +307,9 @@ def main():
     match_states = calc_match_states(seq_dict)
     reduced_alignments = reduce_alignment(match_states, seq_dict)
 
-    count_transitions_emissions(reduced_alignments, match_states, seq_dict)
+    transition_matrix, model = \
+        count_transitions_emissions(reduced_alignments, match_states, seq_dict)
+    calculate_probabilities(transition_matrix)
 
 
 if __name__ == "__main__":
