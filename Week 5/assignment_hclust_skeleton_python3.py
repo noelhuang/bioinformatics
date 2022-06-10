@@ -47,7 +47,7 @@ def csv_parser(lines):
 class Clusterset(object):
     """Clusterset object describing a cluster
 
-       """
+       # """
 
     def __init__(self, left=None, right=None, distance=0.0, ident=None):
         """ 
@@ -210,6 +210,40 @@ def correlation_distance_matrix(data_points):
     return matrix
 
 
+def calc_new_cluster_distances(data_points, new_node):
+    """
+    Calculates the distance between a newly formed node and all other nodes.
+
+    :param data_points: list of lists of floats, can be seen as a 2D matrix
+    Where each row represents gene with measurements at different timepoints.
+    :param new_node: obj, A newly formed node, which is the combination of 2
+    existing nodes.
+    :return: List of floats, which represent the Pearson correlation distances
+    of the newly formed node to all the other nodes.
+
+    Uses the Pearson correlation distance to calculate the distance.
+    """
+    # Calculates the distance between a newly formed node, and the other data
+    # points. Where a data point in this case
+    # consists of a measurement of a gene over several timepoints.
+    distance_row = []
+    for data_point in data_points:
+        distance = (correlation_distance(data_point, new_node.left) +
+                    correlation_distance(data_point, new_node.right) -
+                    correlation_distance(new_node.left, new_node.right)) / 2
+        distance_row.append(distance)
+    return distance_row
+
+
+def hierarchical_clustering(distance_matrix):
+    node_list = []
+    for index, row in enumerate(distance_matrix):
+        node = Clusterset(left=None, right=None, distance=None, ident=index)
+        node_list.append(node)
+
+    while len(node_list) > 1:
+
+
 def main():
     with open("jp_fig10_1a.csv") as file:
         lines = file.readlines()
@@ -222,7 +256,6 @@ def main():
     correlation_matrix = correlation_distance_matrix(parsed_data)
     for index, i in enumerate(correlation_matrix):
         print(f"datapoint {index + 1}", [round(number, 1) for number in i])
-
 
 
 if __name__ == "__main__":
