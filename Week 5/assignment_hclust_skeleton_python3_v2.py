@@ -49,7 +49,8 @@ class Clusterset(object):
 
        # """
 
-    def __init__(self, left=None, right=None, distance=0.0, ident=None):
+    def __init__(self, left=None, right=None, distance=0.0, ident=None,
+                 index=None, left_index=None, right_index=None):
         """ 
         ident: identifier of a leaf node (-1 for internal nodes)
         left: clusterset, left child of the node
@@ -60,6 +61,9 @@ class Clusterset(object):
         self.right = right
         self.ident = ident
         self.distance = distance
+        self.index = index
+        self.left_index = left_index
+        self.right_index = right_index
 
 
 def print_tree(clust, labels=None, n=0):
@@ -210,61 +214,135 @@ def correlation_distance_matrix(data_points):
     return matrix
 
 
-def calc_new_cluster_distances(data_points, new_node):
-    """
-    Calculates the distance between a newly formed node and all other nodes.
+# def calc_new_cluster_distances(data_points, new_node):
+#     """
+#     Calculates the distance between a newly formed node and all other nodes.
+#
+#     :param data_points: list of lists of floats, can be seen as a 2D matrix
+#     Where each row represents gene with measurements at different timepoints.
+#     :param new_node: obj, A newly formed node, which is the combination of 2
+#     existing nodes.
+#     :return: List of floats, which represent the Pearson correlation distances
+#     of the newly formed node to all the other nodes.
+#
+#     Uses the Pearson correlation distance to calculate the distance.
+#     """
+#     # Calculates the distance between a newly formed node, and the other data
+#     # points. Where a data point in this case
+#     # consists of a measurement of a gene over several timepoints.
+#     distance_row = []
+#     for data_point in data_points:
+#         distance = (correlation_distance(data_point, new_node.left) +
+#                     correlation_distance(data_point, new_node.right) -
+#                     correlation_distance(new_node.left, new_node.right)) / 2
+#         distance_row.append(distance)
+#     return distance_row
 
-    :param data_points: list of lists of floats, can be seen as a 2D matrix
-    Where each row represents gene with measurements at different timepoints.
-    :param new_node: obj, A newly formed node, which is the combination of 2
-    existing nodes.
-    :return: List of floats, which represent the Pearson correlation distances
-    of the newly formed node to all the other nodes.
-
-    Uses the Pearson correlation distance to calculate the distance.
-    """
-    # Calculates the distance between a newly formed node, and the other data
-    # points. Where a data point in this case
-    # consists of a measurement of a gene over several timepoints.
+def calc_new_distance_row(new_node, distance_matrix):
     distance_row = []
-    for data_point in data_points:
-        distance = (correlation_distance(data_point, new_node.left) +
-                    correlation_distance(data_point, new_node.right) -
-                    correlation_distance(new_node.left, new_node.right)) / 2
+    for i in range(0, len(distance_matrix)):
+        distance_c_star_c_1 = distance_matrix[i][new_node.left_index]
+        distance_c_star_c_2 = distance_matrix[i][new_node.right_index]
+        distance_c_1_c_2 = \
+            distance_matrix[new_node.left_index][new_node.right_index]
+
+        distance = (distance_c_star_c_1 + distance_c_star_c_2 -
+                    distance_c_1_c_2) / 2
         distance_row.append(distance)
+    distance_row.append(0)  # TODO: Think this is needed, check
     return distance_row
 
 
 def hierarchical_clustering(distance_matrix):
-    # Line 1 and 2, make dict with all nodes with index as keys
-    node_dict = {}
+    node_list = []
     for index, row in enumerate(distance_matrix):
-        node = Clusterset(left=None, right=None, distance=None, ident=index)
-        node_dict[index] = node
+        node = Clusterset(left=None, right=None, distance=None, ident=index,
+                          index=index)
+        node_list.append(node)
 
-    # Convert distance matrix into dict
-    distance_dict = {}
-    for row_index, row in enumerate(distance_matrix):
-        distance_dict[row_index] = {}
-        for column_index, column in enumerate(row):
-            distance_dict[row_index][column_index] = distance_matrix[row_index][column_index]
-
-    print(distance_dict)
-
-    # Line 3
-    while len(node_dict) > 1:
-        # Line 4, find closest clusters
+    while sum(isinstance(x, Clusterset) for x in node_list) > 2:
+        # for a in range(0, 1):
         min_value = 100
         coordinates_min_value = [None, None]
         for j, column in enumerate(distance_matrix):
             for i, row in enumerate(column):
-                if distance_matrix[i][j] < min_value:
-                    min_value = distance_matrix[i][j]
-                    coordinates_min_value = [i, j]
+                if i != j:
+                    if distance_matrix[i][j] < min_value:
+                        min_value = distance_matrix[i][j]
+                        coordinates_min_value = [i, j]
+
+        # Find the correct nodes in the node list
+        # for index, node in enumerate(node_list.copy()):
+        #     if node_list[index] is not None:
+        #         if node.index == coordinates_min_value[0]:
+        #             index_sub_node_left = coordinates_min_value[0]
+        #         if node.index == coordinates_min_value[1]:
+        #             index_sub_node_right = coordinates_min_value[1]
+
+        index_sub_node_left = coordinates_min_value[0]
+        index_sub_node_right = coordinates_min_value[1]
+
+        # Initiate new cluster with two children
+        new_cluster = Clusterset(left=node_list[index_sub_node_left],
+                                 right=node_list[index_sub_node_right],
+                                 distance=distance_matrix[index_sub_node_left]
+                                 [index_sub_node_right],
+                                 ident=-1,
+                                 index=len(distance_matrix),
+                                 left_index=index_sub_node_left,
+                                 right_index=index_sub_node_right)
+
+        # Add new cluster to cluster list
+        node_list.append(new_cluster)
+
+        # Remove old nodes from cluster list
+        node_list[index_sub_node_left] = None
+        node_list[index_sub_node_right] = None
+
+        # Set rows and columns corresponding to left and right subnodes to None
+        # in the distance matrix
+        distance_matrix[index_sub_node_left] = \
+            [1000 for i in range(0, len(distance_matrix[index_sub_node_left]))]
+
+        for i in range(len(distance_matrix)):
+            distance_matrix[i][index_sub_node_right] = 1000
+
+        # Add distance row and column for the newly formed cluster
+        new_row = calc_new_distance_row(new_cluster, distance_matrix)
+        distance_matrix.append(new_row)
+        for i in range(0, len(distance_matrix)-1):
+            distance_matrix[i].append(new_row[i])
+        print(distance_matrix)
+
+        print_tree(new_cluster, None, 0)
+
+
+        last_node = node_list[-1]
+
+        flag = True
+        for x in new_row[0:-1]:
+            if x < 3:
+                flag = False
+
+        if flag:
+            node_list[-1] = None
+        print("node list", node_list)
+        print("newly formed node left index", new_cluster.left_index)
+        print("newly formed node left clust obj", new_cluster.left)
+        print("help this is count of clusters", sum(isinstance(x, Clusterset) for x in node_list))
+    while None in node_list:
+        node_list.remove(None)
+
+    print("test", node_list)
+    print(node_list[0].left_index)
+    print(node_list[0].ident)
+    print(node_list[0].index)
+    print("last node", last_node.index)
+    print("supertest")
 
 
 def main():
-    with open("example_gene_expression_four_genes.csv") as file:
+    with open("jp_fig10_1a.csv") as file:
         lines = file.readlines()
     parsed_data = csv_parser(lines)
 
