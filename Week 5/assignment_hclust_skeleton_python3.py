@@ -280,10 +280,14 @@ def hierarchical_clustering(distance_matrix):
 
         # Line 6, compute distance from new cluster to all other clusters
         new_distances = calc_new_cluster_distances(distance_dict, names_min_value)
+        new_distances[node_name_counter] = 0
         distance_dict[node_name_counter] = new_distances # TODO: i add a new row here, but I need to make sure I also add the column at the end
+        for row_name, row in distance_dict.items():
+            if row_name != node_name_counter:
+                row[node_name_counter] = new_distances[i]
 
         print(new_distances)
-        print("testtest", distance_dict)
+        print("distance dict after adding row column yayaya", distance_dict)
 
         # Line 7, add new vertex C to the graph
         node_dict[node_name_counter] = new_node
