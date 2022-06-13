@@ -210,29 +210,29 @@ def correlation_distance_matrix(data_points):
     return matrix
 
 
-def calc_new_cluster_distances(data_points, new_node):
+def distance_lookup(distance_dict, i, j):
+    distance = distance_dict[i][j]
+    return distance
+
+
+def calc_new_cluster_distances(distance_dict, names_min_value):
     """
     Calculates the distance between a newly formed node and all other nodes.
 
-    :param data_points: list of lists of floats, can be seen as a 2D matrix
-    Where each row represents gene with measurements at different timepoints.
-    :param new_node: obj, A newly formed node, which is the combination of 2
-    existing nodes.
-    :return: List of floats, which represent the Pearson correlation distances
-    of the newly formed node to all the other nodes.
 
     Uses the Pearson correlation distance to calculate the distance.
     """
     # Calculates the distance between a newly formed node, and the other data
     # points. Where a data point in this case
     # consists of a measurement of a gene over several timepoints.
-    distance_row = []
-    for data_point in data_points:
-        distance = (correlation_distance(data_point, new_node.left) +
-                    correlation_distance(data_point, new_node.right) -
-                    correlation_distance(new_node.left, new_node.right)) / 2
-        distance_row.append(distance)
-    return distance_row
+    distance_dict_new = {}
+    for i, rows in distance_dict.items():
+        for j, columns in rows.items():
+            distance_dict_new[j] = (distance_dict[names_min_value[0]][j] + \
+                                    distance_dict[names_min_value[1]][j] - \
+                                    distance_dict[names_min_value[0]][names_min_value[1]]) / 2
+
+    return distance_dict_new
 
 
 def hierarchical_clustering(distance_matrix):
@@ -242,6 +242,10 @@ def hierarchical_clustering(distance_matrix):
         node = Clusterset(left=None, right=None, distance=None, ident=index)
         node_dict[index] = node
 
+    number_of_genes = len(node_dict)
+
+    print("node dict", node_dict)
+
     # Convert distance matrix into dict
     distance_dict = {}
     for row_index, row in enumerate(distance_matrix):
@@ -249,18 +253,55 @@ def hierarchical_clustering(distance_matrix):
         for column_index, column in enumerate(row):
             distance_dict[row_index][column_index] = distance_matrix[row_index][column_index]
 
-    print(distance_dict)
+    print("distance dictio", distance_dict)
 
+    node_name_counter = number_of_genes
     # Line 3
     while len(node_dict) > 1:
+        # for a in range(0, 1):
         # Line 4, find closest clusters
         min_value = 100
         coordinates_min_value = [None, None]
-        for j, column in enumerate(distance_matrix):
-            for i, row in enumerate(column):
-                if distance_matrix[i][j] < min_value:
-                    min_value = distance_matrix[i][j]
-                    coordinates_min_value = [i, j]
+        for i, row in distance_dict.items():
+            for j, column in row.items():
+                if distance_dict[i][j] < min_value:
+                    if i != j:
+                        min_value = distance_dict[i][j]
+                        names_min_value = [i, j]
+        print(names_min_value)
+
+        # Line 5, merge closest clusters
+        left_node = node_dict[names_min_value[0]]
+        right_node = node_dict[names_min_value[1]]
+        new_node = Clusterset(left=left_node,
+                              right=right_node,
+                              ident=-1,
+                              distance=distance_dict[names_min_value[0]][names_min_value[1]])  # TODO: this
+
+        # Line 6, compute distance from new cluster to all other clusters
+        new_distances = calc_new_cluster_distances(distance_dict, names_min_value)
+        distance_dict[node_name_counter] = new_distances # TODO: i add a new row here, but I need to make sure I also add the column at the end
+
+        print(new_distances)
+        print("testtest", distance_dict)
+
+        # Line 7, add new vertex C to the graph
+        node_dict[node_name_counter] = new_node
+        node_name_counter += 1
+        node_dict.pop(names_min_value[0])
+        node_dict.pop(names_min_value[1])
+
+        print("node dict after removal old nodes", node_dict)
+
+        # Line 8, remove rows and columns in the distance dict corresponding to
+        # C1 and C2
+        distance_dict.pop(names_min_value[0])
+        distance_dict.pop(names_min_value[1])
+        for row, dictio in distance_dict.items():
+            dictio.pop(names_min_value[0])
+            dictio.pop(names_min_value[1])
+
+        print("distance dict after removal", distance_dict)
 
 
 def main():
