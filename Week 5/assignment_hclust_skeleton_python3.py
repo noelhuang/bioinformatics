@@ -132,9 +132,13 @@ def cut_tree(list_of_elements, list_of_dist, h=1):
     # go through the elements and find brach point below the cut
     # add non internal nodes
     for i in range(len(list_of_elements)):
+        if list_of_dist[i] is None:
+            list_of_dist[i] = 0
+
         if list_of_dist[i] < h:
             if (list_of_elements[i] != '-'):
                 cl.append(list_of_elements[i])
+
         if list_of_dist[i] >= h:
             if len(cl) > 0:
                 clustlist.append(cl)
@@ -268,25 +272,29 @@ def hierarchical_clustering(distance_matrix):
                     if i != j:
                         min_value = distance_dict[i][j]
                         names_min_value = [i, j]
-        print(names_min_value)
+        print('min value names', names_min_value)
 
         # Line 5, merge closest clusters
         left_node = node_dict[names_min_value[0]]
+        print('left node', left_node)
         right_node = node_dict[names_min_value[1]]
+        print('right node', right_node)
         new_node = Clusterset(left=left_node,
                               right=right_node,
                               ident=-1,
                               distance=distance_dict[names_min_value[0]][names_min_value[1]])  # TODO: this
-
+        print('newest node name', node_name_counter)
+        print('newest object left', new_node.left)
+        print('newest object right', new_node.right)
         # Line 6, compute distance from new cluster to all other clusters
         new_distances = calc_new_cluster_distances(distance_dict, names_min_value)
         new_distances[node_name_counter] = 0
         distance_dict[node_name_counter] = new_distances # TODO: i add a new row here, but I need to make sure I also add the column at the end
         for row_name, row in distance_dict.items():
             if row_name != node_name_counter:
-                row[node_name_counter] = new_distances[i]
+                row[node_name_counter] = new_distances[row_name]
 
-        print(new_distances)
+        print('new distances', new_distances)
         print("distance dict after adding row column yayaya", distance_dict)
 
         # Line 7, add new vertex C to the graph
@@ -306,10 +314,14 @@ def hierarchical_clustering(distance_matrix):
             dictio.pop(names_min_value[1])
 
         print("distance dict after removal", distance_dict)
+        print("node dict end", node_dict)
+    node_list = list(node_dict.values())
+    print(node_list[0])
+    return node_list[0]
 
 
 def main():
-    with open("example_gene_expression_four_genes.csv") as file:
+    with open("jp_fig10_1a.csv") as file:
         lines = file.readlines()
     parsed_data = csv_parser(lines)
 
@@ -321,11 +333,17 @@ def main():
     for index, i in enumerate(correlation_matrix):
         print(f"datapoint {index + 1}", [round(number, 1) for number in i])
 
-    hierarchical_clustering(correlation_matrix)
+    master_node = hierarchical_clustering(euclidean_matrix)
+    print("a", master_node)
+
+    print("b", master_node.left.left.ident)
+    print_tree(master_node, labels=None, n=0)
+    list_of_elements, list_of_dist = get_ordered_elements_distance(master_node)
+    print('list of elements', list_of_elements)
+    print('list of dist', list_of_dist)
+    print(cut_tree(list_of_elements, list_of_dist))
 
 
 if __name__ == "__main__":
     main()
-    # the code below should produce the results necessary to answer
-    # the questions. In other words, if we run your code, we should see 
-    # the data that you used to answer the questions.
+
