@@ -248,16 +248,13 @@ def hierarchical_clustering(distance_matrix):
 
     number_of_genes = len(node_dict)
 
-    print("node dict", node_dict)
-
     # Convert distance matrix into dict
     distance_dict = {}
     for row_index, row in enumerate(distance_matrix):
         distance_dict[row_index] = {}
         for column_index, column in enumerate(row):
             distance_dict[row_index][column_index] = distance_matrix[row_index][column_index]
-
-    print("distance dictio", distance_dict)
+    # print('dist dict', distance_dict)
 
     node_name_counter = number_of_genes
     # Line 3
@@ -268,24 +265,24 @@ def hierarchical_clustering(distance_matrix):
         coordinates_min_value = [None, None]
         for i, row in distance_dict.items():
             for j, column in row.items():
-                if distance_dict[i][j] < min_value:
+                if column < min_value:
                     if i != j:
-                        min_value = distance_dict[i][j]
+                        min_value = column
                         names_min_value = [i, j]
-        print('min value names', names_min_value)
+        # print('min values', names_min_value)
+        # for i, row in distance_dict.items():
+
 
         # Line 5, merge closest clusters
         left_node = node_dict[names_min_value[0]]
-        print('left node', left_node)
+
         right_node = node_dict[names_min_value[1]]
-        print('right node', right_node)
+
         new_node = Clusterset(left=left_node,
                               right=right_node,
                               ident=-1,
                               distance=distance_dict[names_min_value[0]][names_min_value[1]])  # TODO: this
-        print('newest node name', node_name_counter)
-        print('newest object left', new_node.left)
-        print('newest object right', new_node.right)
+
         # Line 6, compute distance from new cluster to all other clusters
         new_distances = calc_new_cluster_distances(distance_dict, names_min_value)
         new_distances[node_name_counter] = 0
@@ -294,16 +291,11 @@ def hierarchical_clustering(distance_matrix):
             if row_name != node_name_counter:
                 row[node_name_counter] = new_distances[row_name]
 
-        print('new distances', new_distances)
-        print("distance dict after adding row column yayaya", distance_dict)
-
         # Line 7, add new vertex C to the graph
         node_dict[node_name_counter] = new_node
         node_name_counter += 1
         node_dict.pop(names_min_value[0])
         node_dict.pop(names_min_value[1])
-
-        print("node dict after removal old nodes", node_dict)
 
         # Line 8, remove rows and columns in the distance dict corresponding to
         # C1 and C2
@@ -312,37 +304,149 @@ def hierarchical_clustering(distance_matrix):
         for row, dictio in distance_dict.items():
             dictio.pop(names_min_value[0])
             dictio.pop(names_min_value[1])
-
-        print("distance dict after removal", distance_dict)
-        print("node dict end", node_dict)
+        print("Dict length:", len(node_dict))
     node_list = list(node_dict.values())
-    print(node_list[0])
     return node_list[0]
 
 
+def hierarchical_clustering_shortcut(distance_matrix):
+    # Line 1 and 2, make dict with all nodes with index as keys
+    node_dict = {}
+    for index, row in enumerate(distance_matrix):
+        node = Clusterset(left=None, right=None, distance=None, ident=index)
+        node_dict[index] = node
+
+    number_of_genes = len(node_dict)
+
+    # Convert distance matrix into dict
+    distance_dict = {}
+    for row_index, row in enumerate(distance_matrix):
+        distance_dict[row_index] = {}
+        for column_index, column in enumerate(row):
+            distance_dict[row_index][column_index] = distance_matrix[row_index][column_index]
+    # print('dist dict', distance_dict)
+
+    node_name_counter = number_of_genes
+    # Line 3
+    while len(node_dict) > 1:
+        # for a in range(0, 1):
+        # Line 4, find closest clusters
+        min_value = 100
+        coordinates_min_value = [None, None]
+        for i, row in distance_dict.items():
+            for j, column in row.items():
+                if column < min_value:
+                    if i != j:
+                        min_value = column
+                        names_min_value = [i, j]
+                if min_value < 0.5:
+                    break
+            if min_value < 0.5:
+                break
+        # print('min values', names_min_value)
+        # for i, row in distance_dict.items():
+
+
+        # Line 5, merge closest clusters
+        left_node = node_dict[names_min_value[0]]
+
+        right_node = node_dict[names_min_value[1]]
+
+        new_node = Clusterset(left=left_node,
+                              right=right_node,
+                              ident=-1,
+                              distance=distance_dict[names_min_value[0]][names_min_value[1]])  
+
+        # Line 6, compute distance from new cluster to all other clusters
+        new_distances = calc_new_cluster_distances(distance_dict, names_min_value)
+        new_distances[node_name_counter] = 0
+        distance_dict[node_name_counter] = new_distances
+        for row_name, row in distance_dict.items():
+            if row_name != node_name_counter:
+                row[node_name_counter] = new_distances[row_name]
+
+        # Line 7, add new vertex C to the graph
+        node_dict[node_name_counter] = new_node
+        node_name_counter += 1
+        node_dict.pop(names_min_value[0])
+        node_dict.pop(names_min_value[1])
+
+        # Line 8, remove rows and columns in the distance dict corresponding to
+        # C1 and C2
+        distance_dict.pop(names_min_value[0])
+        distance_dict.pop(names_min_value[1])
+        for row, dictio in distance_dict.items():
+            dictio.pop(names_min_value[0])
+            dictio.pop(names_min_value[1])
+        print("Dict length:", len(node_dict))
+    node_list = list(node_dict.values())
+    return node_list[0]
+
 def main():
+
+    # Question 1
+    print('Question 1:')
     with open("jp_fig10_1a.csv") as file:
         lines = file.readlines()
     parsed_data = csv_parser(lines)
 
     euclidean_matrix = euclidean_distance_matrix(parsed_data)
     for index, i in enumerate(euclidean_matrix):
-        print(f"datapoint {index + 1}", [round(number, 1) for number in i])
+        print(f"datapoint {index}", [round(number, 1) for number in i])
 
-    correlation_matrix = correlation_distance_matrix(parsed_data)
-    for index, i in enumerate(correlation_matrix):
-        print(f"datapoint {index + 1}", [round(number, 1) for number in i])
+    # correlation_matrix = correlation_distance_matrix(parsed_data)
+    # for index, i in enumerate(correlation_matrix):
+    #     print(f"datapoint {index}", [round(number, 1) for number in i])
 
     master_node = hierarchical_clustering(euclidean_matrix)
-    print("a", master_node)
-
-    print("b", master_node.left.left.ident)
     print_tree(master_node, labels=None, n=0)
     list_of_elements, list_of_dist = get_ordered_elements_distance(master_node)
-    print('list of elements', list_of_elements)
-    print('list of dist', list_of_dist)
-    print(cut_tree(list_of_elements, list_of_dist))
+    print('Question 1b:')
+    print(cut_tree(list_of_elements, list_of_dist, h=3))
 
+    print('Question 2a:')
+    with open("example_gene_expression_four_genes.csv") as file:
+        lines = file.readlines()
+    parsed_data = csv_parser(lines)
+
+    print('Euclidean matrix:')
+    euclidean_matrix = euclidean_distance_matrix(parsed_data)
+    for index, i in enumerate(euclidean_matrix):
+        print(f"datapoint {index}", [round(number, 1) for number in i])
+
+    print('\nQuestion 2b:\nCorrelation matrix')
+    correlation_matrix = correlation_distance_matrix(parsed_data)
+    for index, i in enumerate(correlation_matrix):
+        print(f"datapoint {index}", [round(number, 1) for number in i])
+
+    master_node = hierarchical_clustering(euclidean_matrix)
+    print_tree(master_node, labels=None, n=0)
+    list_of_elements, list_of_dist = get_ordered_elements_distance(master_node)
+    print('Question 2c, euclidean clustering:')
+    print(cut_tree(list_of_elements, list_of_dist, h=3))
+
+    master_node = hierarchical_clustering(correlation_matrix)
+    print_tree(master_node, labels=None, n=0)
+    list_of_elements, list_of_dist = get_ordered_elements_distance(master_node)
+    print('Question 2d, correlation clustering:')
+    print(cut_tree(list_of_elements, list_of_dist, h=0.1))
+
+    print('Question 7:')
+    with open("proteomics_data.csv") as file:
+        lines = file.readlines()
+    parsed_data = csv_parser(lines)
+
+    print('\nQuestion 7:\nCorrelation matrix')
+    correlation_matrix = correlation_distance_matrix(parsed_data)
+    # for index, i in enumerate(correlation_matrix):
+    #     print(f"datapoint {index}", [round(number, 1) for number in i])
+
+    ### HERE I AM USING THE SHORTCUT VERSION OF THE ALGORITHM ###
+    master_node = hierarchical_clustering_shortcut(correlation_matrix)
+    print_tree(master_node, labels=None, n=0)
+    list_of_elements, list_of_dist = get_ordered_elements_distance(master_node)
+    print('Question 7, correlation clustering with shortcut:')
+    print(cut_tree(list_of_elements, list_of_dist, h=0.1))
 
 if __name__ == "__main__":
     main()
