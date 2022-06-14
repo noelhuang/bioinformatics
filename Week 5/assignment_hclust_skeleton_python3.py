@@ -1,8 +1,7 @@
 #!/usr/bin/env python3
 """
 Author: Noël Huang
-Student number:
-Script to: 
+Script to:
 
 Hints:
 - write a function to obtain the Euclidean distance between two points.
@@ -355,7 +354,7 @@ def hierarchical_clustering_shortcut(distance_matrix):
         new_node = Clusterset(left=left_node,
                               right=right_node,
                               ident=-1,
-                              distance=distance_dict[names_min_value[0]][names_min_value[1]])  
+                              distance=distance_dict[names_min_value[0]][names_min_value[1]])
 
         # Line 6, compute distance from new cluster to all other clusters
         new_distances = calc_new_cluster_distances(distance_dict, names_min_value)
@@ -446,7 +445,16 @@ def main():
     print_tree(master_node, labels=None, n=0)
     list_of_elements, list_of_dist = get_ordered_elements_distance(master_node)
     print('Question 7, correlation clustering with shortcut:')
-    print(cut_tree(list_of_elements, list_of_dist, h=0.1))
+
+
+    constant = 0
+    increment = 0.05
+    clusters = cut_tree(list_of_elements, list_of_dist, h=0.1)
+    while len(clusters) != 3:
+        clusters = cut_tree(list_of_elements, list_of_dist, h=0.1+constant)
+        constant = constant + increment
+    print(clusters)
+
 
 if __name__ == "__main__":
     main()
