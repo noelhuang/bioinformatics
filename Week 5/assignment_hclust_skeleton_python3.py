@@ -202,6 +202,13 @@ def correlation_distance(point_1, point_2):
 
 
 def correlation_distance_matrix(data_points):
+    """
+    Makes distance matrix (list of list of float).
+
+    :param data_points: Data points with an index and measurements at different
+    times.
+    :return: distance matrix (list of list of float).
+    """
     number_of_points = len(data_points)
     matrix = [[None for i in range(0, number_of_points)]
               for i in range(0, number_of_points)]
@@ -211,11 +218,6 @@ def correlation_distance_matrix(data_points):
             matrix[i][j] = correlation_distance(data_points[i], data_points[j])
 
     return matrix
-
-
-def distance_lookup(distance_dict, i, j):
-    distance = distance_dict[i][j]
-    return distance
 
 
 def calc_new_cluster_distances(distance_dict, names_min_value):
@@ -239,6 +241,14 @@ def calc_new_cluster_distances(distance_dict, names_min_value):
 
 
 def hierarchical_clustering(distance_matrix):
+    """
+    Performs hierarchical clustering on distance matrix (euclidian or corr)
+
+    :param distance_matrix: List of list of floats, which represent the
+    distance between two nodes
+    :return: master node with children nodes, with leaves at the end. Leaves
+    represent the genes in the experiment.
+    """
     # Line 1 and 2, make dict with all nodes with index as keys
     node_dict = {}
     for index, row in enumerate(distance_matrix):
@@ -309,6 +319,14 @@ def hierarchical_clustering(distance_matrix):
 
 
 def hierarchical_clustering_shortcut(distance_matrix):
+    """
+    Performs hierarchical clustering on correlation distance matrix.
+
+    :param distance_matrix: List of list of floats, which represent the
+    distance between two nodes
+    :return: master node with children nodes, with leaves at the end. Leaves
+    represent the genes in the experiment.
+    """
     # Line 1 and 2, make dict with all nodes with index as keys
     node_dict = {}
     for index, row in enumerate(distance_matrix):
